@@ -1,0 +1,86 @@
+Parameters:
+  Subnet:
+    Type: AWS::EC2::Subnet::Id
+    Description: Select the subnet Id to launuch your ec2
+    Default: subnet-0e490050a3dde2b2e
+  AMIID:
+    Type: String
+    Default: ami-042715b524028ffba
+  VPCID:
+    Type: AWS::EC2::VPC::Id
+    Default: vpc-0c5ed12803385076e
+  Servername:
+    Type: String
+    AllowedValues: [Prod-JumpBox02, Dev-JumpBox02, Test-JumpBox02]
+  Env:
+    Type: String
+    AllowedValues: [Test, Development, Production]
+  Owner:
+    Type: String
+    Default: Sreecharan Yadagiri
+  KeyPairName:
+    Type: String
+    Default: DevDMPJumpBox
+  InstanceType:
+    Type: String
+    Default: t2.micro
+Resources:
+  jumpbox:
+    DependsOn: SecurityGroup
+    Type: AWS::EC2::Instance
+    Properties:
+      DisableApiTermination: true
+      InstanceType: !Ref InstanceType
+      ImageId: !Ref AMIID
+      SubnetId: !Ref Subnet
+      KeyName: !Ref KeyPairName
+      SecurityGroupIds:
+        - !Ref SecurityGroup
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeType: gp3
+            VolumeSize: 8
+            DeleteOnTermination: false
+      Tags:
+        - Key: Name
+          Value: !Ref Servername
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: Env
+          Value: !Ref Env
+          
+  MyEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      InstanceId: !Ref jumpbox
+      Tags:
+        - Key: Name
+          Value: !Ref Servername
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: Env
+          Value: !Ref Env      
+
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub ${Servername}-Security Group
+      GroupName: !Sub ${Servername}-Security Group
+      SecurityGroupEgress:
+        - IpProtocol: All                 
+          CidrIp: 0.0.0.0/0 
+      SecurityGroupIngress:
+        - IpProtocol: tcp       
+          FromPort: 22
+          ToPort: 22           
+          CidrIp: 0.0.0.0/0                           
+      VpcId: !Ref VPCID
+      Tags:
+        - Key: Name
+          Value: !Sub ${Servername}-Security Group
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: Env
+          Value: !Ref Env      
+  
